@@ -1,4 +1,4 @@
-#include "TagTwo/Networking/NetworkService.h"
+#include "TagTwo/Networking/ServiceDiscoveryClient.h"
 #include "TagTwo/Util/Dotenv.h"
 #include <cstdlib>
 #include <ctime>
@@ -17,7 +17,7 @@
  */
 void simulate_service(const std::string& username, const std::string& password, const std::string& host, int port, const std::string& serviceName, int id) {
 
-    TagTwo::Networking::RabbitMQListener listener(serviceName, {"service-discovery"}, 60, false);
+    TagTwo::Networking::ServiceDiscoveryClient listener(serviceName, "service-discovery", "service-answer", 120, 10, 5, false);
     listener.connect(host, port, username, password);
     listener.add_metadata("connection/game", R"(["localhost:8080", "81.22.15.13:5333"])");
 
@@ -99,7 +99,7 @@ int main() {
 
 
     // Create a listener for service discovery
-    TagTwo::Networking::RabbitMQListener listener("Master", {"service-discovery"}, 60, false);
+    TagTwo::Networking::ServiceDiscoveryClient listener("Master", "service-discovery", "service-answer", 120, 10, 5, false);
     listener.connect(
             env_vars.at("RABBITMQ_HOST"),
             std::stoi(env_vars.at("RABBITMQ_PORT")),

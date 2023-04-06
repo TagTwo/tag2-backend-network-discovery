@@ -1,9 +1,14 @@
 //
 // Created by per on 4/6/23.
 //
-#include "TagTwo/Networking/NetworkService.h"
+#include "TagTwo/Networking/ServiceDiscoveryClient.h"
+#include "TagTwo/Networking/ServiceDiscoveryRecord.h"
+#include <utility>
+#include <random>
+#include <spdlog/spdlog.h>
 
-std::string TagTwo::Networking::RabbitMQListener::generateUUID(int n_digits) {
+
+std::string TagTwo::Networking::ServiceDiscoveryClient::generateUUID(int n_digits) {
     // Seed a random number generator using a hardware-based random number generator, if available.
     std::random_device rd;
     // Use the Mersenne Twister 19937 algorithm for the random number generator.
@@ -25,33 +30,33 @@ std::string TagTwo::Networking::RabbitMQListener::generateUUID(int n_digits) {
     return ss.str();
 }
 
-void TagTwo::Networking::RabbitMQListener::enable_heartbeat() {
+void TagTwo::Networking::ServiceDiscoveryClient::enable_heartbeat() {
     heartbeat_enabled = true;
 }
 
-void TagTwo::Networking::RabbitMQListener::disable_heartbeat() {
+void TagTwo::Networking::ServiceDiscoveryClient::disable_heartbeat() {
     heartbeat_enabled = false;
 }
 
-void TagTwo::Networking::RabbitMQListener::add_metadata(const std::string &key, const std::string &data) {
+void TagTwo::Networking::ServiceDiscoveryClient::add_metadata(const std::string &key, const std::string &data) {
     metadata.set(key, data);
 }
 
-void TagTwo::Networking::RabbitMQListener::start_monitor_thread() {
+void TagTwo::Networking::ServiceDiscoveryClient::start_monitor_thread() {
     // Start a new thread that periodically checks for expired services
     monitor_thread = std::thread([this]() {
         while (!stor_monitoring) {
             // Call check_services() to check for expired services
             check_services();
-            // Sleep for 1 second between checks (TODO: make this configurable)
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+            // Sleep for X second between checks
+            std::this_thread::sleep_for(std::chrono::seconds(service_check_interval));
         }
     });
     // Detach the thread from the main thread of execution
     monitor_thread.detach();
 }
 
-void TagTwo::Networking::RabbitMQListener::start_heartbeat_thread() {
+void TagTwo::Networking::ServiceDiscoveryClient::start_heartbeat_thread() {
     // Start a new thread that periodically sends heartbeat messages
     heartbeat_thread = std::thread([this]() {
         while (!stor_monitoring) {
@@ -60,15 +65,15 @@ void TagTwo::Networking::RabbitMQListener::start_heartbeat_thread() {
                 // Send a presence message to the RabbitMQ server
                 send_presence();
             }
-            // Sleep for 10 seconds between messages (TODO: make this configurable)
-            std::this_thread::sleep_for(std::chrono::seconds(10));
+            // Sleep for 10 seconds between messages
+            std::this_thread::sleep_for(std::chrono::seconds(heartbeat_interval));
         }
     });
     // Detach the thread from the main thread of execution
     heartbeat_thread.detach();
 }
 
-void TagTwo::Networking::RabbitMQListener::send_presence() {
+void TagTwo::Networking::ServiceDiscoveryClient::send_presence() {
     // Get a channel object for sending the presence message
     auto _channel = get_channel();
 
@@ -90,13 +95,13 @@ void TagTwo::Networking::RabbitMQListener::send_presence() {
     _channel->publish("amq.topic", "service-discovery", data_string);
 }
 
-void TagTwo::Networking::RabbitMQListener::check_services() {
+void TagTwo::Networking::ServiceDiscoveryClient::check_services() {
     // Lock the services mutex to prevent multiple threads from accessing it at once
     std::lock_guard<std::mutex> lock(services_mutex);
 
     // Iterate over the services map and remove any expired services
     for (auto it = services.begin(); it != services.end();) {
-        if (it->second.is_expired()) {
+        if (it->second->is_expired()) {
             // If the service is expired, remove it from the services map
             it = services.erase(it);
         } else {
@@ -106,7 +111,7 @@ void TagTwo::Networking::RabbitMQListener::check_services() {
     }
 }
 
-void TagTwo::Networking::RabbitMQListener::process_message(const AMQP::Message &message) {
+void TagTwo::Networking::ServiceDiscoveryClient::process_message(const AMQP::Message &message) {
 
 
     // Check if the message is a service discovery message
@@ -138,8 +143,8 @@ void TagTwo::Networking::RabbitMQListener::process_message(const AMQP::Message &
                 // Check if the service ID already exists in the services map
                 if(services.count(msg_service_id) > 0){
                     // If the service ID exists, update its last heartbeat time
-                    services.at(msg_service_id).update_heartbeat(msg_last_heartbeat);
-                    services.at(msg_service_id).update_metadata(msg_metadata);
+                    services.at(msg_service_id)->update_heartbeat(msg_last_heartbeat);
+                    services.at(msg_service_id)->update_metadata(msg_metadata);
                     if(debug){
                         SPDLOG_DEBUG("Processed service discovery message for service: {}", msg_service_id);
                     }
@@ -150,9 +155,16 @@ void TagTwo::Networking::RabbitMQListener::process_message(const AMQP::Message &
                         SPDLOG_DEBUG("Service not found: {}", msg_service_id);
                     }
 
-                    services.emplace(std::piecewise_construct,
-                                     std::forward_as_tuple(msg_service_id),
-                                     std::forward_as_tuple(msg_service_id, service, msg_heartbeat_timeout, msg_last_heartbeat, debug));
+                    services.emplace(
+                            msg_service_id,
+                            std::make_shared<ServiceDiscoveryRecord>(
+                                    msg_service_id,
+                                    service,
+                                    msg_heartbeat_timeout,
+                                    msg_last_heartbeat,
+                                    debug
+                            )
+                    );
 
                 }
 
@@ -168,14 +180,14 @@ void TagTwo::Networking::RabbitMQListener::process_message(const AMQP::Message &
     }
 }
 
-void TagTwo::Networking::RabbitMQListener::connect(std::string host, int port, const std::string &username,
-                                                   const std::string &password, const std::string &vhost) {
+void TagTwo::Networking::ServiceDiscoveryClient::connect(std::string host, int port, const std::string &username,
+                                                         const std::string &password, const std::string &vhost) {
     // Format the RabbitMQ server address using the input parameters
     auto address = fmt::format("amqp://{}:{}@{}:{}/{}", username, password, host, port, vhost);
 
     // Print a log message if debug mode is enabled
     if(debug){
-        SPDLOG_INFO("Connecting to RabbitMQ server: {}", address);
+        SPDLOG_INFO("Connecting to RabbitMQ server: {}:{}/{}", host, port, vhost);
     }
 
     // Try to connect to the RabbitMQ server, retrying until successful
@@ -198,24 +210,23 @@ void TagTwo::Networking::RabbitMQListener::connect(std::string host, int port, c
                 SPDLOG_ERROR("Channel error: {}", message);
             });
 
-            // Declare and bind queues for each input queue name
-            for (const auto& queue : queues) {
-                // Declare a new queue with a generated name and make it exclusive to this connection
-                channel->declareQueue(fmt::format("service-{}-{}", "TODO", generateUUID(12)), AMQP::exclusive).onSuccess([this, &queue](const std::string &name, uint32_t messagecount, uint32_t consumercount) {
-                    // Bind the queue to the "service-discovery" and "service-answer" topics
-                    channel->bindQueue("amq.topic", queue, "service-discovery");
-                    channel->bindQueue("amq.topic", name, "service-answer");
 
-                    // Start consuming messages from the queue
-                    channel->consume(name)
-                            .onReceived([this](const AMQP::Message& message, uint64_t deliveryTag, bool redelivered) {
-                                // Acknowledge the receipt of the message and process it
-                                channel->ack(deliveryTag);
-                                process_message(message);
+            // Declare a new queue with a generated name and make it exclusive to this connection
+            channel->declareQueue(fmt::format("service-{}-{}", service_name, generateUUID(12)), AMQP::exclusive).onSuccess([this](const std::string &name, uint32_t messagecount, uint32_t consumercount) {
+                // Bind the queue to the "service-discovery" and "service-answer" topics
+                channel->bindQueue("amq.topic", report_queue, report_queue);
+                channel->bindQueue("amq.topic", name, answer_routing_key);
 
-                            });
-                });
-            }
+                // Start consuming messages from the queue
+                channel->consume(name)
+                        .onReceived([this](const AMQP::Message& message, uint64_t deliveryTag, bool redelivered) {
+                            // Acknowledge the receipt of the message and process it
+                            channel->ack(deliveryTag);
+                            process_message(message);
+
+                        });
+            });
+
 
             // Set the connected flag to true and print a log message if debug mode is enabled
             connected = true;
@@ -235,7 +246,7 @@ void TagTwo::Networking::RabbitMQListener::connect(std::string host, int port, c
     });
 }
 
-std::vector<std::string> TagTwo::Networking::RabbitMQListener::get_existing_services() {
+std::vector<std::string> TagTwo::Networking::ServiceDiscoveryClient::get_existing_services() {
     // Lock the services mutex to prevent multiple threads from accessing it at once
     std::lock_guard<std::mutex> lock(services_mutex);
 
@@ -252,11 +263,11 @@ std::vector<std::string> TagTwo::Networking::RabbitMQListener::get_existing_serv
     return serviceNames;
 }
 
-std::shared_ptr<AMQP::TcpChannel> TagTwo::Networking::RabbitMQListener::get_channel() {
+std::shared_ptr<AMQP::TcpChannel> TagTwo::Networking::ServiceDiscoveryClient::get_channel() {
     return channel;
 }
 
-TagTwo::Networking::RabbitMQListener::~RabbitMQListener() {
+TagTwo::Networking::ServiceDiscoveryClient::~ServiceDiscoveryClient() {
     // Set the stor_monitoring flag to true to signal the monitoring thread to exit
     stor_monitoring = true;
 
@@ -273,13 +284,24 @@ TagTwo::Networking::RabbitMQListener::~RabbitMQListener() {
     }
 }
 
-TagTwo::Networking::RabbitMQListener::RabbitMQListener(std::string serviceName, const std::vector<std::string> &queues,
-                                                       int heartbeat_timeout, bool _debug)
-        : queues(queues)
-        , service_name(std::move(serviceName))
-        , heartbeat_timeout(heartbeat_timeout)
+
+TagTwo::Networking::ServiceDiscoveryClient::ServiceDiscoveryClient(
+        std::string _serviceName,
+        std::string _report_queue,
+        std::string _answer_routing_key="service-answer",
+        int _heartbeat_timeout=120,
+        int _heartbeat_interval=10,
+        int _service_check_interval=5,
+        bool _debug=false
+)
+        : report_queue(std::move(_report_queue))
+        , answer_routing_key(std::move(_answer_routing_key))
+        , service_name(std::move(_serviceName))
+        , heartbeat_timeout(_heartbeat_timeout)
+        , heartbeat_interval(_heartbeat_interval)
+        , service_check_interval(_service_check_interval)
         , evbase(event_base_new())
-        , service_id(RabbitMQListener::generateUUID())
+        , service_id(ServiceDiscoveryClient::generateUUID())
         , heartbeat_enabled(true)
         , debug(_debug)
 {
@@ -287,59 +309,6 @@ TagTwo::Networking::RabbitMQListener::RabbitMQListener(std::string serviceName, 
     start_heartbeat_thread();
 }
 
-bool TagTwo::Networking::NetworkService::is_expired() {
-    // Get the current time
-    auto current_time = std::chrono::system_clock::now();
-
-    // Get the last heartbeat time (duration)
-    auto last_heartbeat_duration = last_heartbeat();
-
-    // Calculate the time difference between now and the last heartbeat
-    auto time_diff = time_difference(current_time, last_heartbeat_duration);
-
-    if (debug) {
-        SPDLOG_INFO("Now: {} Last: {} Diff: {}, Timeout: {}, Expired: {}",
-                    current_time.time_since_epoch().count(),
-                    last_heartbeat_duration.count(),
-                    time_diff.count(),
-                    heartbeat_timeout,
-                    time_diff.count() > heartbeat_timeout
-        );
-    }
-
-    // Check if the time difference exceeds the heartbeat timeout
-    bool expired = time_diff.count() > heartbeat_timeout;
-    return expired;
-}
-
-std::chrono::seconds
-TagTwo::Networking::NetworkService::time_difference(const std::chrono::time_point<std::chrono::system_clock> &now,
-                                                    const std::chrono::duration<int64_t> &last) {
-    return std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch() - last);
-}
-
-std::chrono::seconds TagTwo::Networking::NetworkService::last_heartbeat() {
-    std::lock_guard<std::mutex> lock(heartbeat_mutex);
-    return _last_heartbeat;
-}
-
-void TagTwo::Networking::NetworkService::update_heartbeat(int last_heartbeat) {
-    std::lock_guard<std::mutex> lock(heartbeat_mutex);
-    _last_heartbeat = std::chrono::seconds(last_heartbeat);
-    //SPDLOG_INFO("{}: Heartbeat updated for {}", service_uid);
-}
-
-void TagTwo::Networking::NetworkService::update_metadata(std::string _metadata) {
-    metadata = std::move(_metadata);
-}
-
-TagTwo::Networking::NetworkService::NetworkService(std::string _serviceUID, std::string _serviceType,
-                                                   int heartbeat_timeout, int last_heartbeat, bool _debug)
-        : service_type(std::move(_serviceType))
-        , heartbeat_timeout(heartbeat_timeout)
-        , service_uid(std::move(_serviceUID))
-        , _last_heartbeat(std::chrono::seconds(last_heartbeat))
-        , debug(_debug)
-{
-
+std::string TagTwo::Networking::ServiceDiscoveryClient::get_service_id() {
+    return service_id;
 }

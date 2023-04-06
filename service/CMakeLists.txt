@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(tagtwo-network-discovery LANGUAGES CXX)
+project(tagtwo_network_discovery LANGUAGES CXX)
 
 ##########################################
 ##
@@ -10,13 +10,23 @@ project(tagtwo-network-discovery LANGUAGES CXX)
 ##########################################
 include(cmake/pmm.cmake)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)  # optional, ensure standard is supported
+set(CMAKE_CXX_EXTENSIONS ON)  # optional, keep compiler extensions off
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if(WIN32)
     set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "" FORCE)
 elseif (UNIX)
     set(VCPKG_TARGET_TRIPLET x64-linux)
 endif()
+
+# # THIS MUST BE BEFORE PMM (else it will use python from vcpkg)
+message("HELLO")
+message(${pybind11_DIR})
+
+find_package(pybind11 CONFIG REQUIRED)
+
 
 pmm(
         VERBOSE DEBUG VCPKG REVISION 2022.10.19
@@ -25,7 +35,6 @@ pmm(
         amqpcpp
         libevent
         nlohmann-json
-        pybind11
         TRIPLET
         ${VCPKG_TARGET_TRIPLET}
 )
@@ -36,23 +45,32 @@ pmm(
 ## Description: Find and include required libraries
 ##
 ##########################################
-find_package(Boost COMPONENTS system REQUIRED)
 find_package(Threads REQUIRED)
 find_package(amqpcpp CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(Libevent CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
-find_package(pybind11 CONFIG REQUIRED)
+
+
+
 
 # Add the source files
-set(SOURCE_FILES src/NetworkService.cpp  src/util/JsonBuilder.cpp src/util/DotEnv.cpp)
+set(SOURCE_FILES src/ServiceDiscoveryClient.cpp src/ServiceDiscoveryRecord.cpp src/util/JsonBuilder.cpp src/util/DotEnv.cpp)
 set(LINK_TARGETS
         amqpcpp
         spdlog::spdlog
         libevent::core
         nlohmann_json::nlohmann_json
-        )
+)
 
+add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
+target_include_directories(${PROJECT_NAME}
+        PUBLIC include
+)
+target_link_libraries(${PROJECT_NAME}
+        PRIVATE
+        ${LINK_TARGETS}
+)
 ##########################################
 ##
 ## Title: Executable
@@ -60,17 +78,19 @@ set(LINK_TARGETS
 ##
 ##########################################
 if(NOT DEFINED IS_PYTHON_BUILD)
-    add_executable(${PROJECT_NAME} src/main.cpp ${SOURCE_FILES})
+    add_executable(${PROJECT_NAME}-bin src/main.cpp ${SOURCE_FILES})
 
-    target_include_directories(${PROJECT_NAME}
+    target_include_directories(${PROJECT_NAME}-bin
             PRIVATE
             include
-            )
+    )
 
-    target_link_libraries(${PROJECT_NAME} PUBLIC
+    target_link_libraries(${PROJECT_NAME}-bin PUBLIC
             ${LINK_TARGETS}
-            )
+    )
 endif()
+
+
 
 ##########################################
 ##
@@ -78,29 +98,28 @@ endif()
 ## Description: Create Python bindings with pybind11
 ##
 ##########################################
+
 set(SOURCE_FILES_PYBIND
-        ${SOURCE_FILES}
-        src/network_service_python_bindings.cpp
+        src/service_discovery_client_python_bindings.cpp
 )
 
-pybind11_add_module(tagtwo_network_discovery_python SHARED ${SOURCE_FILES_PYBIND})
-target_include_directories(tagtwo_network_discovery_python
-        PRIVATE
-        include
-        )
+pybind11_add_module(tagtwo_network_discovery_python ${SOURCE_FILES_PYBIND})
 
 target_link_libraries(tagtwo_network_discovery_python
         PRIVATE
+        ${PROJECT_NAME}
         ${LINK_TARGETS}
-        pybind11::module
-        )
+        -static-libgcc
+        -static-libstdc++
+
+)
 
 if (WIN32)
-    set_target_properties(tagtwo_network_discovery_python PROPERTIES OUTPUT_NAME "tagtwo_network_discovery_python.pyd")
+    set_target_properties(tagtwo_network_discovery_python PROPERTIES SUFFIX ".pyd")
 elseif (APPLE)
-    set_target_properties(tagtwo_network_discovery_python PROPERTIES OUTPUT_NAME "tagtwo_network_discovery_python.dylib")
+    set_target_properties(tagtwo_network_discovery_python PROPERTIES SUFFIX ".dylib")
 else()
-    set_target_properties(tagtwo_network_discovery_python PROPERTIES OUTPUT_NAME "tagtwo_network_discovery_python.so")
+    set_target_properties(tagtwo_network_discovery_python PROPERTIES SUFFIX ".so")
 endif()
 
 ##########################################
@@ -125,5 +144,5 @@ add_custom_command(
 )
 if(NOT DEFINED IS_PYTHON_BUILD)
     add_custom_target(copy_env_file ALL DEPENDS ${ENV_OUTPUT_FILE})
-    add_dependencies(${PROJECT_NAME} copy_env_file)
+    add_dependencies(${PROJECT_NAME}-bin copy_env_file)
 endif ()

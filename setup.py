@@ -1,11 +1,12 @@
-import os
 import re
 import subprocess
 import sys
 from pathlib import Path
-
+import os
+import sysconfig
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
+import pybind11
 
 # Convert distutils Windows platform specifiers to CMake -A arguments
 PLAT_TO_CMAKE = {
@@ -41,6 +42,15 @@ class CMakeBuild(build_ext):
         # Can be set with Conda-Build, for example.
         cmake_generator = os.environ.get("CMAKE_GENERATOR", "")
 
+        Python_INCLUDE_DIRS = sysconfig.get_config_var('INCLUDEPY')
+        Python_LIBDIR = sysconfig.get_config_var('LIBDIR')
+
+        # List all files in the LIBDIR directory
+        all_files = os.listdir(Python_LIBDIR)
+
+        # Filter the library files
+        Python_LIBRARIES = ' '.join([str((Path(Python_LIBDIR) / file).absolute()) for file in all_files if file.endswith(('.so', '.dylib', '.dll', '.a'))])
+
         # Set Python_EXECUTABLE instead if you use PYBIND11_FINDPYTHON
         # EXAMPLE_VERSION_INFO shows you how to pass a value into the C++ code
         # from Python.
@@ -48,6 +58,7 @@ class CMakeBuild(build_ext):
             f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}{os.sep}",
             f"-DPYTHON_EXECUTABLE={sys.executable}",
             f"-DCMAKE_BUILD_TYPE={cfg}",  # not used on MSVC, but no harm
+            f"-Dpybind11_DIR={os.path.dirname(pybind11.__file__)}",
         ]
         build_args = []
         # Adding CMake arguments set as environment variable
@@ -130,7 +141,7 @@ setup(
     url='https://per-arne.no',
     description='Python bindings for the NetworkService and RabbitMQListener classes',
     long_description='',
-    ext_modules=[CMakeExtension('tagtwo_network_discovery_python')],
+    ext_modules=[CMakeExtension('tagtwo_network_discovery_python', sourcedir='service')],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
 )
