@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Force Graph</title>
+    <script src="https://unpkg.com/3d-force-graph"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+</head>
+<body>
+<div id="3d-graph"></div>
+
+<script>
+        // Initialize the 3D Force Graph
+        const Graph = ForceGraph3D()(document.getElementById('3d-graph'))
+            .width(window.innerWidth)
+            .height(window.innerHeight);
+
+        // Connect to RabbitMQ using STOMP
+        const client = Stomp.client('ws://your_rabbitmq_server:15674/ws');
+        const username = 'your_rabbitmq_username';
+        const password = 'your_rabbitmq_password';
+
+        client.debug = null; // Disable debug logs
+        client.connect(username, password, onConnect, onError);
+
+        function onConnect() {
+            console.log('Connected to RabbitMQ.');
+
+            // Subscribe to the desired topics
+            client.subscribe('/exchange/amqp.topic/service-answer', onMessage);
+        }
+
+        function onError(error) {
+            console.log('Error:', error);
+        }
+
+        function onMessage(message) {
+            // Parse the incoming message
+            const serviceMessages = JSON.parse(message.body);
+
+            // Prepare graph data
+            const nodes = [];
+            const links = [];
+
+            serviceMessages.forEach((serviceMessage, index) => {
+                // Create a node for each ServiceMessage
+                nodes.push({
+                    id: serviceMessage.service_id,
+                    name: serviceMessage.metadata || 'No metadata',
+                    val: serviceMessage.heartbeat_timeout
+                });
+
+                // Create a link to the previous node (if not the first)
+                if (index > 0) {
+                    links.push({
+                        source: serviceMessages[index - 1].service_id,
+                        target: serviceMessage.service_id
+                    });
+                }
+            });
+
+            // Update the graph
+            Graph
+                .nodeLabel(node => node.name)
+                .graphData({ nodes, links });
+        }
+    </script>
+</body>
+</html>

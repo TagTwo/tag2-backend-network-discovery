@@ -1,0 +1,5 @@
+pika
+pydantic
+loguru
+dotenv
+python-dotenv
