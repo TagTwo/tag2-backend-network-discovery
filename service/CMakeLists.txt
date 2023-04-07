@@ -10,6 +10,8 @@ project(tagtwo_network_discovery LANGUAGES CXX)
 ##########################################
 include(cmake/pmm.cmake)
 
+
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)  # optional, ensure standard is supported
 set(CMAKE_CXX_EXTENSIONS ON)  # optional, keep compiler extensions off
@@ -22,9 +24,6 @@ elseif (UNIX)
 endif()
 
 # # THIS MUST BE BEFORE PMM (else it will use python from vcpkg)
-message("HELLO")
-message(${pybind11_DIR})
-
 find_package(pybind11 CONFIG REQUIRED)
 
 
