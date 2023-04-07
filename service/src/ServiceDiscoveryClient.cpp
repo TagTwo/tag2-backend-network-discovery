@@ -43,7 +43,7 @@ void TagTwo::Networking::ServiceDiscoveryClient::add_metadata_str(const std::str
 }
 
 void TagTwo::Networking::ServiceDiscoveryClient::add_metadata_dict(const std::string& key, const nlohmann::json& data){
-    metadata.set(key, data.dump()); // TODO this could probably be done better. (prevent dumping and loading)
+    metadata.set(key, data);
 }
 
 void TagTwo::Networking::ServiceDiscoveryClient::start_monitor_thread() {

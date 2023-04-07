@@ -32,7 +32,7 @@ class ServiceTracker:
         self.lock = threading.Lock()
 
     def update_service(self, message: ServiceMessage):
-        if (message.service, message.service_id) not in self.services:
+        if message.service_id not in self.services:
             logger.info(f"New service '{message.service}' for user '{message.service_id}'")
             self.services[message.service_id] = message
 
