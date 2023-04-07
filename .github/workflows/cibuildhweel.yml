@@ -56,3 +56,22 @@ jobs:
           asset_path: ./wheelhouse/*.whl
           asset_name: wheel-${{ matrix.os }}.whl
           asset_content_type: application/octet-stream
+
+      - name: List wheel files
+        run: echo "WHEEL_FILES=$(ls wheelhouse/*.whl)" >> $GITHUB_ENV
+
+      - name: Upload wheels to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for wheel_file in $WHEEL_FILES; do
+            echo "Uploading $wheel_file"
+            curl \
+              --progress-bar \
+              --location \
+              --request POST \
+              --header "Authorization: Bearer $GITHUB_TOKEN" \
+              --header "Content-Type:application/octet-stream" \
+              --data-binary "@$wheel_file" \
+              --url "${{ steps.create_release.outputs.upload_url }}?name=$(basename $wheel_file)"
+          done
