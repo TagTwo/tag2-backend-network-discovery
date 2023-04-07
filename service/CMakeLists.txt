@@ -97,30 +97,30 @@ endif()
 ## Description: Create Python bindings with pybind11
 ##
 ##########################################
+if(DEFINED IS_PYTHON_BUILD)
+    set(SOURCE_FILES_PYBIND
+            src/service_discovery_client_python_bindings.cpp
+    )
 
-set(SOURCE_FILES_PYBIND
-        src/service_discovery_client_python_bindings.cpp
-)
+    pybind11_add_module(tagtwo_network_discovery_python ${SOURCE_FILES_PYBIND})
 
-pybind11_add_module(tagtwo_network_discovery_python ${SOURCE_FILES_PYBIND})
+    target_link_libraries(tagtwo_network_discovery_python
+            PRIVATE
+            ${PROJECT_NAME}
+            ${LINK_TARGETS}
+            -static-libgcc
+            -static-libstdc++
 
-target_link_libraries(tagtwo_network_discovery_python
-        PRIVATE
-        ${PROJECT_NAME}
-        ${LINK_TARGETS}
-        -static-libgcc
-        -static-libstdc++
+    )
 
-)
-
-if (WIN32)
-    set_target_properties(tagtwo_network_discovery_python PROPERTIES SUFFIX ".pyd")
-elseif (APPLE)
-    set_target_properties(tagtwo_network_discovery_python PROPERTIES SUFFIX ".dylib")
-else()
-    set_target_properties(tagtwo_network_discovery_python PROPERTIES SUFFIX ".so")
-endif()
-
+    if (WIN32)
+        set_target_properties(tagtwo_network_discovery_python PROPERTIES SUFFIX ".pyd")
+    elseif (APPLE)
+        set_target_properties(tagtwo_network_discovery_python PROPERTIES SUFFIX ".dylib")
+    else()
+        set_target_properties(tagtwo_network_discovery_python PROPERTIES SUFFIX ".so")
+    endif()
+endif ()
 ##########################################
 ##
 ## Title: Copy .env file

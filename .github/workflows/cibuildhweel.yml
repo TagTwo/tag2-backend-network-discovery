@@ -44,7 +44,6 @@ jobs:
 
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014 #manylinux_2_28
           CIBW_BEFORE_ALL: >
-            yum -y install zip curl perl-core zlib-devel unzip tar || true
             if [ "$CIBW_PLATFORM" == "linux" ]; then
               dnf install -y zip curl perl-core zlib-devel || true
               yum -y install zip curl perl-core zlib-devel unzip tar || true
