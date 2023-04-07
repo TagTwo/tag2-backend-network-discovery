@@ -125,8 +125,14 @@ namespace TagTwo::Networking{
          * monitoring feature is enabled, the class will periodically check for expired
          * services and remove them from the list of available services.
          */
-        void add_metadata(const std::string& key, const std::string& data);
+        void add_metadata_str(const std::string& key, const std::string& data);
 
+        /**
+         * @brief Add a JSON object to the metadata.
+         * @param key The key to use for the JSON object.
+         * @param data The JSON object to add.
+         */
+        void add_metadata_dict(const std::string& key, const nlohmann::json& data);
 
         /**
          * @brief Get the service name.

@@ -55,7 +55,8 @@ PYBIND11_MODULE(tagtwo_network_discovery_python, m) {
             .def_static("generateUUID", &ServiceDiscoveryClient::generateUUID, py::arg("n_digits") = 32)
             .def("enable_heartbeat", &ServiceDiscoveryClient::enable_heartbeat)
             .def("disable_heartbeat", &ServiceDiscoveryClient::disable_heartbeat)
-            .def("add_metadata", &ServiceDiscoveryClient::add_metadata, py::arg("key"), py::arg("data"));
+            .def("add_metadata_dict", &ServiceDiscoveryClient::add_metadata_dict, py::arg("key"), py::arg("data"))
+            .def("add_metadata_str", &ServiceDiscoveryClient::add_metadata_str, py::arg("key"), py::arg("data"));
     #ifdef VERSION_INFO
         m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
     #else

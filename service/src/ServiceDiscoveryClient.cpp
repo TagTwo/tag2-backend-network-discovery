@@ -38,8 +38,12 @@ void TagTwo::Networking::ServiceDiscoveryClient::disable_heartbeat() {
     heartbeat_enabled = false;
 }
 
-void TagTwo::Networking::ServiceDiscoveryClient::add_metadata(const std::string &key, const std::string &data) {
+void TagTwo::Networking::ServiceDiscoveryClient::add_metadata_str(const std::string &key, const std::string &data) {
     metadata.set(key, data);
+}
+
+void TagTwo::Networking::ServiceDiscoveryClient::add_metadata_dict(const std::string& key, const nlohmann::json& data){
+    metadata.set(key, data.dump()); // TODO this could probably be done better. (prevent dumping and loading)
 }
 
 void TagTwo::Networking::ServiceDiscoveryClient::start_monitor_thread() {
@@ -313,7 +317,7 @@ std::string TagTwo::Networking::ServiceDiscoveryClient::get_service_id() {
     return service_id;
 }
 
-std::vector<std::shared_ptr<ServiceDiscoveryRecord>>
+std::vector<std::shared_ptr<TagTwo::Networking::ServiceDiscoveryRecord>>
 TagTwo::Networking::ServiceDiscoveryClient::get_services(std::string service_type) {
     auto result = get_services();
     result.erase(std::remove_if(result.begin(), result.end(), [&service_type](const std::shared_ptr<ServiceDiscoveryRecord>& service){
@@ -323,7 +327,7 @@ TagTwo::Networking::ServiceDiscoveryClient::get_services(std::string service_typ
 
 }
 
-std::vector<std::shared_ptr<ServiceDiscoveryRecord>> TagTwo::Networking::ServiceDiscoveryClient::get_services() {
+std::vector<std::shared_ptr<TagTwo::Networking::ServiceDiscoveryRecord>> TagTwo::Networking::ServiceDiscoveryClient::get_services() {
     std::vector<std::shared_ptr<ServiceDiscoveryRecord>> result;
     result.reserve(services.size());
     std::lock_guard<std::mutex> lock(services_mutex);
