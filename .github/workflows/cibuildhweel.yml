@@ -32,3 +32,27 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           path: ./wheelhouse/*.whl
+
+      - name: Set release name
+        run: echo "RELEASE_NAME=$(date +'%Y.%m.%d-%H:%M Release')" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ env.RELEASE_NAME }}
+          draft: false
+          prerelease: false
+
+      - name: Upload wheels to GitHub Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./wheelhouse/*.whl
+          asset_name: wheel-${{ matrix.os }}.whl
+          asset_content_type: application/octet-stream

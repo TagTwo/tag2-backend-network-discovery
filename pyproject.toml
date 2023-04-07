@@ -12,7 +12,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.cibuildwheel]
 build = "*"
-skip = "cp*_musllinux_* pp*"
+skip = "cp*_musllinux_* pp* *i686* *aarch64* *ppc64le* *s390x*"
 test-skip = ""
 
 archs = ["auto"]
@@ -24,7 +24,7 @@ environment-pass = []
 build-verbosity = ""
 
 before-all = "yum -y install zip curl perl-core zlib-devel unzip tar"  # dnf install -y zip curl perl-core zlib-devel
-before-build = ""
+before-build = "rm -rf build"
 repair-wheel-command = ""
 
 test-command = ""
