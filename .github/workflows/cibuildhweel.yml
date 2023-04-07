@@ -36,7 +36,7 @@ jobs:
       - name: Set release name and tag
         run: |
           echo "RELEASE_NAME=$(date +'%Y.%m.%d-%H:%M Release')" >> $GITHUB_ENV
-          echo "RELEASE_TAG=$RELEASE_NAME >> $GITHUB_ENV
+          echo "RELEASE_TAG=$RELEASE_NAME" >> $GITHUB_ENV
 
       - name: Create GitHub Release
         id: create_release
