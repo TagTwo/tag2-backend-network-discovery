@@ -72,5 +72,5 @@ jobs:
               --header "Authorization: Bearer $GITHUB_TOKEN" \
               --header "Content-Type:application/octet-stream" \
               --data-binary "@$wheel_file" \
-              --url "${{ steps.create_release.outputs.upload_url }}?name=$(basename $wheel_file)"
+              --url "${{ steps.create_release.outputs.upload_url }}/name=$(basename $wheel_file)"
           done
