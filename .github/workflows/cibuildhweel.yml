@@ -45,13 +45,13 @@ jobs:
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014 #manylinux_2_28
           CIBW_BEFORE_ALL: >
             if [ "$CIBW_PLATFORM" == "linux" ]; then
-              dnf install -y zip curl perl-core zlib-devel || true
-              yum -y install zip curl perl-core zlib-devel unzip tar || true
+            dnf install -y zip curl perl-core zlib-devel || true;
+            yum -y install zip curl perl-core zlib-devel unzip tar || true;
             elif [ "$CIBW_PLATFORM" == "macos" ]; then
-              brew update
-              brew install zip curl perl zlib
+            brew update;
+            brew install zip curl perl zlib;
             elif [ "$CIBW_PLATFORM" == "windows" ]; then
-              choco install zip curl perl zlib
+            choco install zip curl perl zlib;
             fi
 
 
