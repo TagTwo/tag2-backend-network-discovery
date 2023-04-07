@@ -312,3 +312,23 @@ TagTwo::Networking::ServiceDiscoveryClient::ServiceDiscoveryClient(
 std::string TagTwo::Networking::ServiceDiscoveryClient::get_service_id() {
     return service_id;
 }
+
+std::vector<std::shared_ptr<ServiceDiscoveryRecord>>
+TagTwo::Networking::ServiceDiscoveryClient::get_services(std::string service_type) {
+    auto result = get_services();
+    result.erase(std::remove_if(result.begin(), result.end(), [&service_type](const std::shared_ptr<ServiceDiscoveryRecord>& service){
+        return service->get_service_type() != service_type;
+    }), result.end());
+    return result;
+
+}
+
+std::vector<std::shared_ptr<ServiceDiscoveryRecord>> TagTwo::Networking::ServiceDiscoveryClient::get_services() {
+    std::vector<std::shared_ptr<ServiceDiscoveryRecord>> result;
+    result.reserve(services.size());
+    std::lock_guard<std::mutex> lock(services_mutex);
+    for (auto& service : services){
+        result.push_back(service.second);
+    }
+    return result;
+}

@@ -127,7 +127,27 @@ namespace TagTwo::Networking{
          */
         void add_metadata(const std::string& key, const std::string& data);
 
+
+        /**
+         * @brief Get the service name.
+         * @return The service name.
+         */
         std::string get_service_id();
+
+
+        /**
+         * @brief Get a vector of ServiceDiscoveryRecord objects.
+         * @return A vector containing ServiceDiscoveryRecord objects.
+         */
+        std::vector<std::shared_ptr<ServiceDiscoveryRecord>> get_services();
+
+
+        /**
+         * @brief Get a vector of ServiceDiscoveryRecord objects of a specific type.
+         * @param service_type The type of service to get.
+         * @return A vector containing ServiceDiscoveryRecord objects.
+         */
+        std::vector<std::shared_ptr<ServiceDiscoveryRecord>> get_services(std::string service_type);
 
     private:
 
@@ -164,25 +184,6 @@ namespace TagTwo::Networking{
 
 
 
-        std::vector<std::shared_ptr<ServiceDiscoveryRecord>> get_services(){
-            std::vector<std::shared_ptr<ServiceDiscoveryRecord>> result;
-            result.reserve(services.size());
-            std::lock_guard<std::mutex> lock(services_mutex);
-            for (auto& service : services){
-                result.push_back(service.second);
-            }
-            return result;
-        }
-
-
-        std::vector<std::shared_ptr<ServiceDiscoveryRecord>> get_services(std::string service_type){
-            auto result = get_services();
-            result.erase(std::remove_if(result.begin(), result.end(), [&service_type](const std::shared_ptr<ServiceDiscoveryRecord>& service){
-                return service->get_service_type() != service_type;
-            }), result.end());
-            return result;
-
-        }
 
     };
 
