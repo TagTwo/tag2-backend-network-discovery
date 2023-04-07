@@ -59,18 +59,8 @@ jobs:
           echo "WHEEL_FILES=$WHEEL_FILES" >> $GITHUB_ENV
 
 
-      - name: Upload wheels to GitHub Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          for wheel_file in $WHEEL_FILES; do
-            echo "Uploading $wheel_file"
-            curl \
-              --progress-bar \
-              --location \
-              --request POST \
-              --header "Authorization: Bearer $GITHUB_TOKEN" \
-              --header "Content-Type:application/octet-stream" \
-              --data-binary "@$wheel_file" \
-              --url "${{ steps.create_release.outputs.upload_url }}/name=$(basename $wheel_file)"
-          done
+      - uses: shogo82148/actions-upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: wheelhouse/*.whl
+
