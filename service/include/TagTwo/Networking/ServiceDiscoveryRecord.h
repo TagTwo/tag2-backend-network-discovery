@@ -8,6 +8,7 @@
 #include <string>
 #include <chrono>
 #include <memory>
+#include <mutex>
 
 namespace TagTwo::Networking {
 

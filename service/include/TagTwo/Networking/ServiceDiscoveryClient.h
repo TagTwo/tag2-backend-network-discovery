@@ -1,11 +1,13 @@
 #ifndef TAGTWO_STREAMING_NETWORKSERVICE_H
 #define TAGTWO_STREAMING_NETWORKSERVICE_H
+#include "TagTwo/Util/JsonBuilder.h"
 #include <memory>
 #include <unordered_map>
 #include <amqpcpp.h>
 #include <amqpcpp/libevent.h>
 #include <thread>
-#include "TagTwo/Util/JsonBuilder.h"
+#include <mutex>
+
 
 
 namespace TagTwo::Networking{
