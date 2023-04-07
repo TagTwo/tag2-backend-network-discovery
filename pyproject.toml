@@ -12,7 +12,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.cibuildwheel]
 build = "*"
-skip = "cp*_musllinux_* pp* *i686* *aarch64* *ppc64le* *s390x*"
+skip = "*musllinux* pp* *i686* *aarch64* *ppc64le* *s390x*"
 test-skip = ""
 
 archs = ["auto"]
