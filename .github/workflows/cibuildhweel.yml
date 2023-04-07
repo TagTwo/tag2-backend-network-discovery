@@ -54,7 +54,10 @@ jobs:
           prerelease: false
 
       - name: List wheel files
-        run: echo "WHEEL_FILES=$(ls wheelhouse/*.whl)" >> $GITHUB_ENV
+        run: |
+          WHEEL_FILES="$(ls wheelhouse/*.whl | tr '\n' ' ')"
+          echo "WHEEL_FILES=$WHEEL_FILES" >> $GITHUB_ENV
+
 
       - name: Upload wheels to GitHub Release
         env:
