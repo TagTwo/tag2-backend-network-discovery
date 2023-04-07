@@ -33,8 +33,10 @@ jobs:
         with:
           path: ./wheelhouse/*.whl
 
-      - name: Set release name
-        run: echo "RELEASE_NAME=$(date +'%Y.%m.%d-%H:%M Release')" >> $GITHUB_ENV
+      - name: Set release name and tag
+        run: |
+          echo "RELEASE_NAME=$(date +'%Y.%m.%d-%H:%M Release')" >> $GITHUB_ENV
+          echo "RELEASE_TAG=$RELEASE_NAME >> $GITHUB_ENV
 
       - name: Create GitHub Release
         id: create_release
@@ -42,7 +44,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
+          tag_name: ${{ env.RELEASE_TAG }}
           release_name: ${{ env.RELEASE_NAME }}
           draft: false
           prerelease: false
