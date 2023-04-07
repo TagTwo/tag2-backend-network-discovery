@@ -1,6 +1,5 @@
 #ifndef TAGTWO_STREAMING_NETWORKSERVICE_H
 #define TAGTWO_STREAMING_NETWORKSERVICE_H
-#include "TagTwo/Util/JsonBuilder.h"
 #include <memory>
 #include <unordered_map>
 #include <amqpcpp.h>
@@ -8,7 +7,8 @@
 #include <thread>
 #include <mutex>
 
-
+#include "TagTwo/Util/JsonBuilder.h"
+#include "TagTwo/Networking/ServiceDiscoveryRecord.h"
 
 namespace TagTwo::Networking{
 
@@ -163,6 +163,26 @@ namespace TagTwo::Networking{
         void process_message(const AMQP::Message& message);
 
 
+
+        std::vector<std::shared_ptr<ServiceDiscoveryRecord>> get_services(){
+            std::vector<std::shared_ptr<ServiceDiscoveryRecord>> result;
+            result.reserve(services.size());
+            std::lock_guard<std::mutex> lock(services_mutex);
+            for (auto& service : services){
+                result.push_back(service.second);
+            }
+            return result;
+        }
+
+
+        std::vector<std::shared_ptr<ServiceDiscoveryRecord>> get_services(std::string service_type){
+            auto result = get_services();
+            result.erase(std::remove_if(result.begin(), result.end(), [&service_type](const std::shared_ptr<ServiceDiscoveryRecord>& service){
+                return service->get_service_type() != service_type;
+            }), result.end());
+            return result;
+
+        }
 
     };
 

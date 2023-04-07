@@ -31,8 +31,10 @@ bool TagTwo::Networking::ServiceDiscoveryRecord::is_expired() {
 }
 
 std::chrono::seconds
-TagTwo::Networking::ServiceDiscoveryRecord::time_difference(const std::chrono::time_point<std::chrono::system_clock> &now,
-                                                            const std::chrono::duration<int64_t> &last) {
+TagTwo::Networking::ServiceDiscoveryRecord::time_difference(
+        const std::chrono::time_point<std::chrono::system_clock> &now,
+        const std::chrono::duration<int64_t> &last
+        ) {
     return std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch() - last);
 }
 
@@ -48,11 +50,18 @@ void TagTwo::Networking::ServiceDiscoveryRecord::update_heartbeat(int last_heart
 }
 
 void TagTwo::Networking::ServiceDiscoveryRecord::update_metadata(std::string _metadata) {
+    std::lock_guard<std::mutex> lock(metadata_mutex);
     metadata = std::move(_metadata);
+    metadata_json = nullptr;
 }
 
-TagTwo::Networking::ServiceDiscoveryRecord::ServiceDiscoveryRecord(std::string _serviceUID, std::string _serviceType,
-                                                                   int heartbeat_timeout, int last_heartbeat, bool _debug)
+TagTwo::Networking::ServiceDiscoveryRecord::ServiceDiscoveryRecord(
+        std::string _serviceUID,
+        std::string _serviceType,
+        int heartbeat_timeout,
+        int last_heartbeat,
+        bool _debug
+        )
         : service_type(std::move(_serviceType))
         , heartbeat_timeout(heartbeat_timeout)
         , service_uid(std::move(_serviceUID))
@@ -61,3 +70,35 @@ TagTwo::Networking::ServiceDiscoveryRecord::ServiceDiscoveryRecord(std::string _
 {
 
 }
+
+
+nlohmann::json* TagTwo::Networking::ServiceDiscoveryRecord::get_metadata_json() {
+
+    // If the metadata_json variable is not initialized, parse the metadata string and store it in the variable.
+    if (metadata_json == nullptr) {
+        // Lock the mutex to prevent concurrent access to the metadata_json variable.
+        std::lock_guard<std::mutex> lock(metadata_mutex);
+        // Parse the metadata string and store it in the metadata_json variable.
+        metadata_json = std::make_shared<nlohmann::json>(nlohmann::json::parse(metadata));
+    }
+
+    // Return the metadata_json variable.
+    return metadata_json.get();
+}
+
+int TagTwo::Networking::ServiceDiscoveryRecord::get_heartbeat_timeout() const {
+    return heartbeat_timeout;
+}
+
+std::string TagTwo::Networking::ServiceDiscoveryRecord::get_metadata() {
+    return metadata;
+}
+
+std::string TagTwo::Networking::ServiceDiscoveryRecord::get_service_type() {
+    return service_type;
+}
+
+std::string TagTwo::Networking::ServiceDiscoveryRecord::get_service_uid() {
+    return service_uid;
+}
+

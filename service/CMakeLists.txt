@@ -9,7 +9,7 @@ project(tagtwo_network_discovery LANGUAGES CXX)
 ##
 ##########################################
 include(cmake/pmm.cmake)
-
+include(cmake/CPM.cmake)
 
 
 set(CMAKE_CXX_STANDARD 20)
@@ -38,6 +38,19 @@ pmm(
         ${VCPKG_TARGET_TRIPLET}
 )
 
+#############################################################################################
+#####
+##### CPM - Install Dependencies
+#####
+#############################################################################################
+CPMAddPackage(
+        NAME pybind11_json  # has target: pybind11_json
+        GIT_TAG master
+        GIT_REPOSITORY https://github.com/pybind/pybind11_json.git
+        OPTIONS
+)
+
+
 ##########################################
 ##
 ## Title: Dependencies
@@ -59,6 +72,7 @@ set(LINK_TARGETS
         amqpcpp
         spdlog::spdlog
         libevent::core
+        pybind11_json
         nlohmann_json::nlohmann_json
 )
 

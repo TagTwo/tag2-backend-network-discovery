@@ -3,6 +3,7 @@
 //
 #include "TagTwo/Networking/ServiceDiscoveryClient.h"
 #include "TagTwo/Networking/ServiceDiscoveryRecord.h"
+#include "pybind11_json/pybind11_json.hpp"
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #define STRINGIFY(x) #x
@@ -26,6 +27,11 @@ PYBIND11_MODULE(tagtwo_network_discovery_python, m) {
             .def("update_metadata", &ServiceDiscoveryRecord::update_metadata, py::arg("metadata"))
             .def("update_heartbeat", &ServiceDiscoveryRecord::update_heartbeat, py::arg("last_heartbeat"))
             .def("last_heartbeat", &ServiceDiscoveryRecord::last_heartbeat)
+            .def("get_service_uid", &ServiceDiscoveryRecord::get_service_uid)
+            .def("get_service_type", &ServiceDiscoveryRecord::get_service_type)
+            .def("get_metadata", &ServiceDiscoveryRecord::get_metadata)
+            .def("get_metadata_json", &ServiceDiscoveryRecord::get_metadata_json)
+            .def("get_heartbeat_timeout", &ServiceDiscoveryRecord::get_heartbeat_timeout)
             .def("is_expired", &ServiceDiscoveryRecord::is_expired);
 
     py::class_<ServiceDiscoveryClient>(m, "ServiceDiscoveryClient")
