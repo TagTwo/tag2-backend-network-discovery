@@ -101,7 +101,6 @@ set(SOURCE_FILES
         src/ServiceDiscoveryRecord.cpp
         src/util/JsonBuilder.cpp
         src/util/DotEnv.cpp
-        src/util/ErrorUtil.cpp
 )
 set(LINK_TARGETS
         amqpcpp
