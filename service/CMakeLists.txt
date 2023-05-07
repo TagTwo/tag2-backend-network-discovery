@@ -28,19 +28,14 @@ set(vcpkg_dependencies)
 check_package("nlohmann_json" nlohmann-json vcpkg_dependencies)
 check_package("spdlog" spdlog vcpkg_dependencies)
 check_package("amqpcpp" amqpcpp vcpkg_dependencies)
-check_package("libevent" Libevent vcpkg_dependencies)
+check_package("Libevent" libevent vcpkg_dependencies)
 check_package("nng" nng vcpkg_dependencies)
 check_package("nngpp" nngpp vcpkg_dependencies)
 
 pmm(
         VERBOSE DEBUG VCPKG REVISION 2022.10.19
         REQUIRES
-        spdlog
-        amqpcpp
-        libevent
-        nlohmann-json
-        nng  # NNGClient
-        nngpp  # NNGClient
+        ${vcpkg_dependencies}
         TRIPLET
         ${VCPKG_TARGET_TRIPLET}
 )
