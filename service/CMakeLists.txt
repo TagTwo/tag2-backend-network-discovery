@@ -29,7 +29,6 @@ pmm(
         spdlog
         amqpcpp
         libevent
-
         nlohmann-json
         nng  # NNGClient
         nngpp  # NNGClient
@@ -94,16 +93,12 @@ find_package(Libevent CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(nng CONFIG REQUIRED)
 find_package(nngpp CONFIG REQUIRED)
-find_package( OpenSSL REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 # Add the source files
 set(SOURCE_FILES
         src/ServiceDiscoveryClient.cpp
         src/ServiceDiscoveryRecord.cpp
-        src/GameSocket/GameSocket.cpp
-        src/GameSocket/GameSocketProtocol.cpp
-        src/GameSocket/GameSocketServer.cpp
-        src/GameSocket/GameSocketClientSSL.cpp
         src/util/JsonBuilder.cpp
         src/util/DotEnv.cpp
         src/util/SSLUtil.cpp
@@ -153,17 +148,6 @@ if(NOT DEFINED IS_PYTHON_BUILD)
     )
 
 
-    add_executable(${PROJECT_NAME}-gameserver-bin src/main_socketserver.cpp ${SOURCE_FILES})
-
-    target_include_directories(${PROJECT_NAME}-gameserver-bin
-            PRIVATE
-            include
-    )
-
-    target_link_libraries(${PROJECT_NAME}-gameserver-bin PUBLIC
-            ${LINK_TARGETS}
-            tqdm
-    )
 endif()
 
 

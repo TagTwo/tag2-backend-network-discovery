@@ -79,7 +79,7 @@ int main() {
     std::string env_file = ".env";
 
     auto& dotenv = TagTwo::Util::DotEnv::getInstance();
-    dotenv.load_dotenv(env_file);
+    dotenv.load(env_file);
 
     std::vector<std::string> serviceNames = {
             "ServiceA",
