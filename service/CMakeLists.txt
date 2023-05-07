@@ -11,8 +11,6 @@ project(tagtwo_network_discovery LANGUAGES CXX)
 include(cmake/pmm.cmake)
 include(cmake/CPM.cmake)
 
-
-
 if(WIN32)
     set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "" FORCE)
 elseif (UNIX)
@@ -47,27 +45,6 @@ CPMAddPackage(
         GIT_REPOSITORY https://github.com/pybind/pybind11_json.git
         OPTIONS
 )
-
-CPMAddPackage(
-        NAME tqdm  # has target: pybind11_json
-        GIT_TAG master
-        GIT_REPOSITORY https://github.com/tqdm/tqdm.cpp
-        OPTIONS
-        DOWNLOAD_ONLY YES
-)
-
-add_library(tqdm INTERFACE)
-target_include_directories(tqdm INTERFACE ${tqdm_SOURCE_DIR}/include)
-
-
-get_cmake_property(_variableNames VARIABLES)
-list (SORT _variableNames)
-foreach (_variableName ${_variableNames})
-    message(STATUS "${_variableName}=${${_variableName}}")
-endforeach()
-
-
-
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)  # optional, ensure standard is supported
