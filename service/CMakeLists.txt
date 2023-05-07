@@ -24,7 +24,7 @@ endif()
 # # THIS MUST BE BEFORE PMM (else it will use python from vcpkg)
 find_package(pybind11 CONFIG REQUIRED)
 
-set(vcpkg_dependencies)
+set(vcpkg_dependencies libevent)
 check_package("nlohmann_json" nlohmann-json vcpkg_dependencies)
 check_package("spdlog" spdlog vcpkg_dependencies)
 check_package("amqpcpp" amqpcpp vcpkg_dependencies)
