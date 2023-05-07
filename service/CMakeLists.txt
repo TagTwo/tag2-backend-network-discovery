@@ -10,6 +10,7 @@ project(tagtwo_network_discovery LANGUAGES CXX)
 ##########################################
 include(cmake/pmm.cmake)
 include(cmake/CPM.cmake)
+include(cmake/util.cmake)
 
 if(WIN32)
     set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "" FORCE)
@@ -20,6 +21,13 @@ endif()
 # # THIS MUST BE BEFORE PMM (else it will use python from vcpkg)
 find_package(pybind11 CONFIG REQUIRED)
 
+set(vcpkg_dependencies)
+check_package("spdlog" spdlog vcpkg_dependencies)
+check_package("amqpcpp" amqpcpp vcpkg_dependencies)
+check_package("libevent" Libevent vcpkg_dependencies)
+check_package("nlohmann-json" nlohmann_json vcpkg_dependencies)
+check_package("nng" nng vcpkg_dependencies)
+check_package("nngpp" nngpp vcpkg_dependencies)
 
 pmm(
         VERBOSE DEBUG VCPKG REVISION 2022.10.19
@@ -71,6 +79,9 @@ find_package(nlohmann_json CONFIG REQUIRED)
 find_package(nng CONFIG REQUIRED)
 find_package(nngpp CONFIG REQUIRED)
 find_package(OpenSSL REQUIRED)
+
+
+
 
 # Add the source files
 set(SOURCE_FILES

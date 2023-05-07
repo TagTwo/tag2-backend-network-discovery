@@ -1,0 +1,16 @@
+function(check_package FIND_PACKAGE_NAMES PMM_PACKAGE_NAME PACKAGE_LIST)
+    set(PACKAGE_FOUND FALSE)
+
+    foreach(FIND_PACKAGE_NAME IN LISTS FIND_PACKAGE_NAMES)
+        find_package(${FIND_PACKAGE_NAME} QUIET)
+        if(${FIND_PACKAGE_NAME}_FOUND)
+            set(PACKAGE_FOUND TRUE)
+            break()
+        endif()
+    endforeach()
+
+    if(NOT PACKAGE_FOUND)
+        message(STATUS "Package not found (tried: ${FIND_PACKAGE_NAMES}). Will be installed using pmm...")
+        set(${PACKAGE_LIST} ${${PACKAGE_LIST}} ${PMM_PACKAGE_NAME} PARENT_SCOPE)
+    endif()
+endfunction()
