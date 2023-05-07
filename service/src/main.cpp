@@ -1,8 +1,9 @@
-#include "TagTwo/Networking/ServiceDiscoveryClient.h"
+#include "TagTwo/Networking/ServiceDiscovery/ServiceDiscoveryClient.h"
 #include "TagTwo/Util/Dotenv.h"
 #include <cstdlib>
 #include <ctime>
 #include <random>
+
 
 /**
  * @brief Simulates a service instance that sends heartbeats and goes offline randomly.
@@ -17,9 +18,9 @@
  */
 void simulate_service(const std::string& username, const std::string& password, const std::string& host, int port, const std::string& serviceName, int id) {
 
-    TagTwo::Networking::ServiceDiscoveryClient listener(serviceName, "service-discovery", "service-answer", 120, 10, 5, false);
+    TagTwo::Networking::ServiceDiscoveryClient listener(serviceName, "service-discovery", "service-answer", 120, 10, 5, "", false);
     listener.connect(host, port, username, password);
-    listener.add_metadata("connection/game", R"(["localhost:8080", "81.22.15.13:5333"])");
+    listener.add_metadata_str_list("connection/game", {"localhost:8080", "81.22.15.13:5333"});
 
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -99,7 +100,7 @@ int main() {
 
 
     // Create a listener for service discovery
-    TagTwo::Networking::ServiceDiscoveryClient listener("Master", "service-discovery", "service-answer", 120, 10, 5, false);
+    TagTwo::Networking::ServiceDiscoveryClient listener("Master", "service-discovery", "service-answer", 120, 10, 5, "", false);
     listener.connect(
             env_vars.at("RABBITMQ_HOST"),
             std::stoi(env_vars.at("RABBITMQ_PORT")),

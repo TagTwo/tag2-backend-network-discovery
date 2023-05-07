@@ -2,7 +2,7 @@
 // Created by per on 4/6/23.
 //
 #include <spdlog/spdlog.h>
-#include "TagTwo/Networking/ServiceDiscoveryRecord.h"
+#include "TagTwo/Networking/ServiceDiscovery/ServiceDiscoveryRecord.h"
 
 
 bool TagTwo::Networking::ServiceDiscoveryRecord::is_expired() {
@@ -73,6 +73,11 @@ TagTwo::Networking::ServiceDiscoveryRecord::ServiceDiscoveryRecord(
 
 
 nlohmann::json* TagTwo::Networking::ServiceDiscoveryRecord::get_metadata_json() {
+
+    // If the metadata string is empty, return nullptr.
+    if(metadata.empty()){
+        return nullptr;
+    }
 
     // If the metadata_json variable is not initialized, parse the metadata string and store it in the variable.
     if (metadata_json == nullptr) {

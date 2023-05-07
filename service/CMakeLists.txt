@@ -12,10 +12,6 @@ include(cmake/pmm.cmake)
 include(cmake/CPM.cmake)
 
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)  # optional, ensure standard is supported
-set(CMAKE_CXX_EXTENSIONS ON)  # optional, keep compiler extensions off
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if(WIN32)
     set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "" FORCE)
@@ -33,7 +29,10 @@ pmm(
         spdlog
         amqpcpp
         libevent
+
         nlohmann-json
+        nng  # NNGClient
+        nngpp  # NNGClient
         TRIPLET
         ${VCPKG_TARGET_TRIPLET}
 )
@@ -50,6 +49,37 @@ CPMAddPackage(
         OPTIONS
 )
 
+CPMAddPackage(
+        NAME tqdm  # has target: pybind11_json
+        GIT_TAG master
+        GIT_REPOSITORY https://github.com/tqdm/tqdm.cpp
+        OPTIONS
+        DOWNLOAD_ONLY YES
+)
+
+add_library(tqdm INTERFACE)
+target_include_directories(tqdm INTERFACE ${tqdm_SOURCE_DIR}/include)
+
+
+get_cmake_property(_variableNames VARIABLES)
+list (SORT _variableNames)
+foreach (_variableName ${_variableNames})
+    message(STATUS "${_variableName}=${${_variableName}}")
+endforeach()
+
+
+
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)  # optional, ensure standard is supported
+set(CMAKE_CXX_EXTENSIONS ON)  # optional, keep compiler extensions off
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -ffast-math -funroll-loops -march=native -fomit-frame-pointer -flto")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -ffast-math -funroll-loops -march=native -fomit-frame-pointer -flto")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -ffast-math -funroll-loops -march=native -fomit-frame-pointer")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -ffast-math -funroll-loops -march=native -fomit-frame-pointer")
+
 
 ##########################################
 ##
@@ -62,21 +92,41 @@ find_package(amqpcpp CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(Libevent CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
-
-
-
+find_package(nng CONFIG REQUIRED)
+find_package(nngpp CONFIG REQUIRED)
+find_package( OpenSSL REQUIRED)
 
 # Add the source files
-set(SOURCE_FILES src/ServiceDiscoveryClient.cpp src/ServiceDiscoveryRecord.cpp src/util/JsonBuilder.cpp src/util/DotEnv.cpp)
+set(SOURCE_FILES
+        src/ServiceDiscoveryClient.cpp
+        src/ServiceDiscoveryRecord.cpp
+        src/GameSocket/GameSocket.cpp
+        src/GameSocket/GameSocketProtocol.cpp
+        src/GameSocket/GameSocketServer.cpp
+        src/GameSocket/GameSocketClientSSL.cpp
+        src/util/JsonBuilder.cpp
+        src/util/DotEnv.cpp
+        src/util/SSLUtil.cpp
+        src/util/ErrorUtil.cpp
+)
 set(LINK_TARGETS
         amqpcpp
         spdlog::spdlog
         libevent::core
         pybind11_json
         nlohmann_json::nlohmann_json
+        nng::nng
+        nng::nngpp
+        OpenSSL::SSL
 )
 
+
+add_compile_definitions(TAGTWO_NETWORKING_VERSION=1) #  SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
+target_compile_definitions(${PROJECT_NAME}
+        PUBLIC
+        TAGTWO_NETWORKING_VERSION=1
+)
 target_include_directories(${PROJECT_NAME}
         PUBLIC include
 )
@@ -100,6 +150,19 @@ if(NOT DEFINED IS_PYTHON_BUILD)
 
     target_link_libraries(${PROJECT_NAME}-bin PUBLIC
             ${LINK_TARGETS}
+    )
+
+
+    add_executable(${PROJECT_NAME}-gameserver-bin src/main_socketserver.cpp ${SOURCE_FILES})
+
+    target_include_directories(${PROJECT_NAME}-gameserver-bin
+            PRIVATE
+            include
+    )
+
+    target_link_libraries(${PROJECT_NAME}-gameserver-bin PUBLIC
+            ${LINK_TARGETS}
+            tqdm
     )
 endif()
 

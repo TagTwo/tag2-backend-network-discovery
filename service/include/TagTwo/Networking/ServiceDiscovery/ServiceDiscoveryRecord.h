@@ -111,7 +111,7 @@ namespace TagTwo::Networking {
         std::mutex heartbeat_mutex; ///< Mutex to protect access to the _last_heartbeat variable.
         std::mutex metadata_mutex; ///< Mutex to protect access to the metadata variable.
         const std::string service_uid; ///< Unique identifier for the service.
-        std::string metadata; ///< Metadata associated with the service.
+        std::string metadata = {}; ///< Metadata associated with the service.
         std::shared_ptr<nlohmann::json> metadata_json = nullptr; ///< Metadata associated with the service in JSON format.
         bool debug; ///< Debug flag to enable or disable debug output.
 

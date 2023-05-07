@@ -1,14 +1,17 @@
 #ifndef TAGTWO_STREAMING_NETWORKSERVICE_H
 #define TAGTWO_STREAMING_NETWORKSERVICE_H
-#include <memory>
-#include <unordered_map>
+
+
+
 #include <amqpcpp.h>
 #include <amqpcpp/libevent.h>
 #include <thread>
+#include <memory>
+#include <unordered_map>
 #include <mutex>
 
-#include "TagTwo/Util/JsonBuilder.h"
-#include "TagTwo/Networking/ServiceDiscoveryRecord.h"
+#include "../../Util/JsonBuilder.h"
+#include "ServiceDiscoveryRecord.h"
 
 namespace TagTwo::Networking{
 
@@ -57,6 +60,7 @@ namespace TagTwo::Networking{
                 int heartbeat_timeout,
                 int heartbeat_interval,
                 int service_check_interval,
+                std::string _service_id,
                 bool _debug
         );
 
@@ -133,6 +137,30 @@ namespace TagTwo::Networking{
          * @param data The JSON object to add.
          */
         void add_metadata_dict(const std::string& key, const nlohmann::json& data);
+
+
+        /**
+         * @brief Add a int
+         * @param key The key to use for the JSON array.
+         * @param data The int to add
+         */
+        void add_metadata_int(const std::string& key, int data);
+
+
+        /**
+         * @brief Add a float
+         * @param key The key to use for the JSON array.
+         * @param data The float to add
+         */
+        void add_metadata_float(const std::string& key, float data);
+
+
+        /**
+         * @brief Add a vector of strings
+         * @param key The key to use for the JSON array.
+         * @param data The string vector to add
+         */
+        void add_metadata_str_list(const std::string& key, const std::vector<std::string>& data);
 
         /**
          * @brief Get the service name.

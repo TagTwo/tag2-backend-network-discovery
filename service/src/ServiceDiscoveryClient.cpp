@@ -1,8 +1,8 @@
 //
 // Created by per on 4/6/23.
 //
-#include "TagTwo/Networking/ServiceDiscoveryClient.h"
-#include "TagTwo/Networking/ServiceDiscoveryRecord.h"
+#include "TagTwo/Networking/ServiceDiscovery/ServiceDiscoveryClient.h"
+#include "TagTwo/Networking/ServiceDiscovery/ServiceDiscoveryRecord.h"
 #include <utility>
 #include <random>
 #include <spdlog/spdlog.h>
@@ -45,6 +45,21 @@ void TagTwo::Networking::ServiceDiscoveryClient::add_metadata_str(const std::str
 void TagTwo::Networking::ServiceDiscoveryClient::add_metadata_dict(const std::string& key, const nlohmann::json& data){
     metadata.set(key, data);
 }
+
+void TagTwo::Networking::ServiceDiscoveryClient::add_metadata_int(const std::string &key, int data) {
+    metadata.set(key, data);
+}
+
+void TagTwo::Networking::ServiceDiscoveryClient::add_metadata_float(const std::string &key, float data) {
+    metadata.set(key, data);
+}
+
+void TagTwo::Networking::ServiceDiscoveryClient::add_metadata_str_list(const std::string &key,
+                                                                       const std::vector<std::string> &data) {
+    metadata.set(key, data);
+}
+
+
 
 void TagTwo::Networking::ServiceDiscoveryClient::start_monitor_thread() {
     // Start a new thread that periodically checks for expired services
@@ -184,8 +199,13 @@ void TagTwo::Networking::ServiceDiscoveryClient::process_message(const AMQP::Mes
     }
 }
 
-void TagTwo::Networking::ServiceDiscoveryClient::connect(std::string host, int port, const std::string &username,
-                                                         const std::string &password, const std::string &vhost) {
+void TagTwo::Networking::ServiceDiscoveryClient::connect(
+        std::string host,
+        int port,
+        const std::string &username,
+        const std::string &password,
+        const std::string &vhost
+) {
     // Format the RabbitMQ server address using the input parameters
     auto address = fmt::format("amqp://{}:{}@{}:{}/{}", username, password, host, port, vhost);
 
@@ -214,9 +234,11 @@ void TagTwo::Networking::ServiceDiscoveryClient::connect(std::string host, int p
                 SPDLOG_ERROR("Channel error: {}", message);
             });
 
+            auto serivce_name = fmt::format("service-{}-{}", service_name, generateUUID(12));
+
 
             // Declare a new queue with a generated name and make it exclusive to this connection
-            channel->declareQueue(fmt::format("service-{}-{}", service_name, generateUUID(12)), AMQP::exclusive).onSuccess([this](const std::string &name, uint32_t messagecount, uint32_t consumercount) {
+            channel->declareQueue(serivce_name, AMQP::exclusive).onSuccess([this](const std::string &name, uint32_t messagecount, uint32_t consumercount) {
                 // Bind the queue to the "service-discovery" and "service-answer" topics
                 channel->bindQueue("amq.topic", report_queue, report_queue);
                 channel->bindQueue("amq.topic", name, answer_routing_key);
@@ -289,6 +311,8 @@ TagTwo::Networking::ServiceDiscoveryClient::~ServiceDiscoveryClient() {
 }
 
 
+
+
 TagTwo::Networking::ServiceDiscoveryClient::ServiceDiscoveryClient(
         std::string _serviceName,
         std::string _report_queue,
@@ -296,6 +320,7 @@ TagTwo::Networking::ServiceDiscoveryClient::ServiceDiscoveryClient(
         int _heartbeat_timeout=120,
         int _heartbeat_interval=10,
         int _service_check_interval=5,
+        std::string _service_id="",
         bool _debug=false
 )
         : report_queue(std::move(_report_queue))
@@ -305,7 +330,7 @@ TagTwo::Networking::ServiceDiscoveryClient::ServiceDiscoveryClient(
         , heartbeat_interval(_heartbeat_interval)
         , service_check_interval(_service_check_interval)
         , evbase(event_base_new())
-        , service_id(ServiceDiscoveryClient::generateUUID())
+        , service_id(_service_id.empty() ? generateUUID(12) : std::move(_service_id))
         , heartbeat_enabled(true)
         , debug(_debug)
 {
@@ -336,3 +361,4 @@ std::vector<std::shared_ptr<TagTwo::Networking::ServiceDiscoveryRecord>> TagTwo:
     }
     return result;
 }
+
