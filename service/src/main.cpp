@@ -76,9 +76,10 @@ std::vector<std::shared_ptr<std::thread>> start_simulation(const std::vector<std
 
 int main() {
     srand(static_cast<unsigned>(time(nullptr)));
+    std::string env_file = ".env";
 
-    std::filesystem::path env_file = ".env";
-    std::map<std::string, std::string> env_vars = TagTwo::Util::DotEnv::read_dotenv(env_file);
+    auto& dotenv = TagTwo::Util::DotEnv::getInstance();
+    dotenv.load_dotenv(env_file);
 
     std::vector<std::string> serviceNames = {
             "ServiceA",
@@ -91,10 +92,10 @@ int main() {
 
     auto serviceThreads = start_simulation(
             serviceNames,
-            env_vars.at("RABBITMQ_USERNAME"),
-            env_vars.at("RABBITMQ_PASSWORD"),
-            env_vars.at("RABBITMQ_HOST"),
-            std::stoi(env_vars.at("RABBITMQ_PORT"))
+            dotenv.get("RABBITMQ_USERNAME"),
+            dotenv.get("RABBITMQ_PASSWORD"),
+            dotenv.get("RABBITMQ_HOST"),
+            std::stoi(dotenv.get("RABBITMQ_PORT"))
     );
 
 
@@ -102,11 +103,11 @@ int main() {
     // Create a listener for service discovery
     TagTwo::Networking::ServiceDiscoveryClient listener("Master", "service-discovery", "service-answer", 120, 10, 5, "", false);
     listener.connect(
-            env_vars.at("RABBITMQ_HOST"),
-            std::stoi(env_vars.at("RABBITMQ_PORT")),
-            env_vars.at("RABBITMQ_USERNAME"),
-            env_vars.at("RABBITMQ_PASSWORD"),
-            env_vars.at("RABBITMQ_VHOST")
+            dotenv.get("RABBITMQ_HOST"),
+            std::stoi(dotenv.get("RABBITMQ_PORT")),
+            dotenv.get("RABBITMQ_USERNAME"),
+            dotenv.get("RABBITMQ_PASSWORD"),
+            dotenv.get("RABBITMQ_VHOST")
     );
 
 

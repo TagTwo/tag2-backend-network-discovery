@@ -2,14 +2,14 @@
 // Created by per on 4/6/23.
 //
 #include "TagTwo/Util/Dotenv.h"
+void TagTwo::Util::DotEnv::load_dotenv(const std::string& filepath) {
+    auto file_path = std::filesystem::path(filepath);
 
-std::map<std::string, std::string> TagTwo::Util::DotEnv::read_dotenv(const std::filesystem::path& filepath) {
-    std::map<std::string, std::string> env_vars;
-    std::ifstream file(filepath);
+    std::ifstream file(file_path);
 
     if (!file.is_open()) {
-        SPDLOG_ERROR("Error: Unable to open .env file at path: {}", filepath.string());
-        return env_vars;
+        SPDLOG_WARN("Error: Unable to open .env file at path: {}", file_path.string());
+        return;
     }
 
     std::string line;
@@ -24,5 +24,21 @@ std::map<std::string, std::string> TagTwo::Util::DotEnv::read_dotenv(const std::
     }
 
     file.close();
-    return env_vars;
+}
+
+std::string TagTwo::Util::DotEnv::get(const std::string& key) const {
+    // First, check the env_vars map
+    auto it = env_vars.find(key);
+    if (it != env_vars.end()) {
+        return it->second;
+    }
+
+    // Second, check the system environment
+    const char* value = std::getenv(key.c_str());
+    if (value) {
+        return {value};
+    }
+
+    // If the key is not found in both locations, throw an error
+    throw std::runtime_error("Error: Environment variable not found: " + key);
 }
