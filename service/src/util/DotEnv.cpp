@@ -2,7 +2,21 @@
 // Created by per on 4/6/23.
 //
 #include "TagTwo/Util/Dotenv.h"
-void TagTwo::Util::DotEnv::load_dotenv(const std::string& filepath) {
+
+
+void TagTwo::Util::DotEnv::require(const std::initializer_list<std::string>& required_keys) {
+    for (const auto& key : required_keys) {
+        try {
+            get(key); // Will throw an error if the key is not found
+        } catch (const std::runtime_error& e) {
+            SPDLOG_ERROR("Error: Required environment variable not found: {}", key);
+            throw;
+        }
+    }
+}
+
+
+void TagTwo::Util::DotEnv::load(const std::string& filepath) {
     auto file_path = std::filesystem::path(filepath);
 
     std::ifstream file(file_path);
