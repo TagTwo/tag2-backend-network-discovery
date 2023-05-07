@@ -28,7 +28,6 @@ set(vcpkg_dependencies)
 check_package("nlohmann_json" nlohmann-json vcpkg_dependencies)
 check_package("spdlog" spdlog vcpkg_dependencies)
 check_package("amqpcpp" amqpcpp vcpkg_dependencies)
-check_package("Libevent" libevent vcpkg_dependencies)
 check_package("nng" nng vcpkg_dependencies)
 check_package("nngpp" nngpp vcpkg_dependencies)
 
