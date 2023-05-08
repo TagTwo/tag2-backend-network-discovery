@@ -230,9 +230,13 @@ void TagTwo::Networking::ServiceDiscoveryClient::connect(
             channel = std::make_shared<AMQP::TcpChannel>(connection.get());
 
             // Set up an error handler for the channel
-            channel->onError([](const char* message) {
-                SPDLOG_ERROR("Channel error: {}", message);
+            channel->onError([this, host, port, username, password, vhost](const char* message) {
+                SPDLOG_ERROR("Channel error when connecting to RabbitMQ server: {}:{}/{}: {}", host, port, vhost, message);
+                connected = false;
+                std::this_thread::sleep_for(std::chrono::seconds(reconnect_interval));
+                connect(host, port, username, password, vhost);
             });
+
 
             auto serivce_name = fmt::format("service-{}-{}", service_name, generateUUID(12));
 
@@ -245,12 +249,11 @@ void TagTwo::Networking::ServiceDiscoveryClient::connect(
 
                 // Start consuming messages from the queue
                 channel->consume(name)
-                        .onReceived([this](const AMQP::Message& message, uint64_t deliveryTag, bool redelivered) {
-                            // Acknowledge the receipt of the message and process it
-                            channel->ack(deliveryTag);
-                            process_message(message);
-
-                        });
+                .onReceived([this](const AMQP::Message& message, uint64_t deliveryTag, bool redelivered) {
+                    // Acknowledge the receipt of the message and process it
+                    channel->ack(deliveryTag);
+                    process_message(message);
+                });
             });
 
 
@@ -263,13 +266,17 @@ void TagTwo::Networking::ServiceDiscoveryClient::connect(
             // Print an error message and wait for 5 seconds before retrying
             SPDLOG_ERROR("Failed to connect to RabbitMQ server: {}. Retrying in 5 seconds...", e.what());
             std::this_thread::sleep_for(std::chrono::seconds(5));
+            connected = false;
         }
     }
 
     // Start the libevent thread to handle the connection in the background
-    libeven_thread = std::thread([this]() {
-        event_base_dispatch(evbase);
-    });
+    if(libevent_thread == nullptr){
+        libevent_thread = std::make_unique<std::thread>([this]() {
+            event_base_dispatch(evbase);
+        });
+    }
+
 }
 
 std::vector<std::string> TagTwo::Networking::ServiceDiscoveryClient::get_existing_services() {
@@ -305,8 +312,8 @@ TagTwo::Networking::ServiceDiscoveryClient::~ServiceDiscoveryClient() {
     if (monitor_thread.joinable()) {
         monitor_thread.join();
     }
-    if (libeven_thread.joinable()) {
-        libeven_thread.join();
+    if (libevent_thread->joinable()) {
+        libevent_thread->join();
     }
 }
 
@@ -320,6 +327,7 @@ TagTwo::Networking::ServiceDiscoveryClient::ServiceDiscoveryClient(
         int _heartbeat_timeout=120,
         int _heartbeat_interval=10,
         int _service_check_interval=5,
+        int _reconnect_interval=5,
         std::string _service_id="",
         bool _debug=false
 )
@@ -328,6 +336,7 @@ TagTwo::Networking::ServiceDiscoveryClient::ServiceDiscoveryClient(
         , service_name(std::move(_serviceName))
         , heartbeat_timeout(_heartbeat_timeout)
         , heartbeat_interval(_heartbeat_interval)
+        , reconnect_interval(_reconnect_interval)
         , service_check_interval(_service_check_interval)
         , evbase(event_base_new())
         , service_id(_service_id.empty() ? generateUUID(12) : std::move(_service_id))

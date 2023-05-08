@@ -4,7 +4,7 @@
 #include "TagTwo/Util/Dotenv.h"
 
 
-void TagTwo::Util::DotEnv::require(const std::initializer_list<std::string>& required_keys) {
+void TagTwo::Util::DotEnv::require(const std::initializer_list<std::string>& required_keys) const {
     for (const auto& key : required_keys) {
         try {
             get(key); // Will throw an error if the key is not found

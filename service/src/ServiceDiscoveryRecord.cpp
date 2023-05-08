@@ -51,6 +51,9 @@ void TagTwo::Networking::ServiceDiscoveryRecord::update_heartbeat(int last_heart
 
 void TagTwo::Networking::ServiceDiscoveryRecord::update_metadata(std::string _metadata) {
     std::lock_guard<std::mutex> lock(metadata_mutex);
+    if(debug && metadata.empty() and metadata_json){
+        SPDLOG_INFO("Setting metadata for {} to {}", service_uid, _metadata);
+    }
     metadata = std::move(_metadata);
     metadata_json = nullptr;
 }

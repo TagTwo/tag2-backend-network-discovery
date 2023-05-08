@@ -24,7 +24,7 @@ namespace TagTwo::Util {
 
         // Load .env file into the singleton
         void load(const std::string& filepath);
-        void require(const std::initializer_list<std::string>& required_keys);
+        void require(const std::initializer_list<std::string>& required_keys) const;
 
 
         // Retrieve a specific key's value

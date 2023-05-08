@@ -36,13 +36,14 @@ PYBIND11_MODULE(tagtwo_network_discovery_python, m) {
             .def("is_expired", &ServiceDiscoveryRecord::is_expired);
 
     py::class_<ServiceDiscoveryClient>(m, "ServiceDiscoveryClient")
-            .def(py::init<std::string, std::string, std::string, int, int, int, std::string, bool>(),
+            .def(py::init<std::string, std::string, std::string, int, int, int, int, std::string, bool>(),
                  py::arg("serviceName"),
                  py::arg("report_queue"),
                  py::arg("answer_routing_key"),
                  py::arg("heartbeat_timeout"),
                  py::arg("heartbeat_interval"),
                  py::arg("service_check_interval"),
+                 py::arg("reconnect_interval"),
                  py::arg("service_id"),
                  py::arg("_debug"))
             .def("get_channel", &ServiceDiscoveryClient::get_channel)

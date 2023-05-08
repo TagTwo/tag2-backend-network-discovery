@@ -33,7 +33,7 @@ namespace TagTwo::Networking{
         std::thread monitor_thread;
         event_base* evbase;
         std::atomic<bool> stor_monitoring{false};
-        std::thread libeven_thread;
+        std::unique_ptr<std::thread> libevent_thread = nullptr;
         const std::string service_name;
         const std::string service_id;
         bool connected = false;
@@ -45,6 +45,7 @@ namespace TagTwo::Networking{
         const std::string answer_routing_key;
         const int heartbeat_interval;
         const int service_check_interval;
+        const int reconnect_interval;
 
     public:
 
@@ -60,6 +61,7 @@ namespace TagTwo::Networking{
                 int heartbeat_timeout,
                 int heartbeat_interval,
                 int service_check_interval,
+                int _reconnect_interval,
                 std::string _service_id,
                 bool _debug
         );

@@ -18,7 +18,7 @@
  */
 void simulate_service(const std::string& username, const std::string& password, const std::string& host, int port, const std::string& serviceName, int id) {
 
-    TagTwo::Networking::ServiceDiscoveryClient listener(serviceName, "service-discovery", "service-answer", 120, 10, 5, "", false);
+    TagTwo::Networking::ServiceDiscoveryClient listener(serviceName, "service-discovery", "service-answer", 120, 10, 5, 5, "", false);
     listener.connect(host, port, username, password);
     listener.add_metadata_str_list("connection/game", {"localhost:8080", "81.22.15.13:5333"});
 
@@ -101,7 +101,7 @@ int main() {
 
 
     // Create a listener for service discovery
-    TagTwo::Networking::ServiceDiscoveryClient listener("Master", "service-discovery", "service-answer", 120, 10, 5, "", false);
+    TagTwo::Networking::ServiceDiscoveryClient listener("Master", "service-discovery", "service-answer", 120, 10, 5, 5, "", false);
     listener.connect(
             dotenv.get("RABBITMQ_HOST"),
             std::stoi(dotenv.get("RABBITMQ_PORT")),
