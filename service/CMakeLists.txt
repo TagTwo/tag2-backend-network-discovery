@@ -33,7 +33,7 @@ if(NOT PMM_DISABLED)
     check_package("nngpp" nngpp vcpkg_dependencies)
 
     pmm(
-            VERBOSE DEBUG VCPKG REVISION 2022.10.19
+            VERBOSE DEBUG VCPKG REVISION 2023.04.15
             REQUIRES
             ${vcpkg_dependencies}
             TRIPLET
@@ -52,7 +52,7 @@ CPMAddPackage(
         OPTIONS
 )
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)  # optional, ensure standard is supported
 set(CMAKE_CXX_EXTENSIONS ON)  # optional, keep compiler extensions off
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)

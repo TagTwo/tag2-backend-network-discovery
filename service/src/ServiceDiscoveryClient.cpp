@@ -9,25 +9,22 @@
 
 
 std::string TagTwo::Networking::ServiceDiscoveryClient::generateUUID(int n_digits) {
-    // Seed a random number generator using a hardware-based random number generator, if available.
-    std::random_device rd;
-    // Use the Mersenne Twister 19937 algorithm for the random number generator.
-    std::mt19937 gen(rd());
-    // Generate random numbers between 0 and 15 (inclusive).
-    std::uniform_int_distribution<> dis(0, 15);
+    static const char alphanum[] =
+            "0123456789"
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            "abcdefghijklmnopqrstuvwxyz";
 
-    // Create a string stream to build the UUID string.
-    std::stringstream ss;
-    // Generate 32 hexadecimal digits (with hyphens added at positions 8, 12, 16, and 20).
-    for (int i = 0; i < n_digits; i++) {
-        if (i == 8 || i == 12 || i == 16 || i == 20) {
-            ss << "-";
-        }
-        ss << std::hex << dis(gen);
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, sizeof(alphanum) - 2);
+
+    std::string s;
+    s.reserve(n_digits);
+    for (int i = 0; i < n_digits; ++i) {
+        s += alphanum[dis(gen)];
     }
 
-    // Return the generated UUID as a string.
-    return ss.str();
+    return s;
 }
 
 void TagTwo::Networking::ServiceDiscoveryClient::enable_heartbeat() {
@@ -238,11 +235,11 @@ void TagTwo::Networking::ServiceDiscoveryClient::connect(
             });
 
 
-            auto serivce_name = fmt::format("service-{}-{}", service_name, generateUUID(12));
+            auto unique_service_name = fmt::format("service-{}-{}", service_name, generateUUID(12));
 
 
             // Declare a new queue with a generated name and make it exclusive to this connection
-            channel->declareQueue(serivce_name, AMQP::exclusive).onSuccess([this](const std::string &name, uint32_t messagecount, uint32_t consumercount) {
+            channel->declareQueue(unique_service_name, AMQP::exclusive).onSuccess([this](const std::string &name, uint32_t messagecount, uint32_t consumercount) {
                 // Bind the queue to the "service-discovery" and "service-answer" topics
                 channel->bindQueue("amq.topic", report_queue, report_queue);
                 channel->bindQueue("amq.topic", name, answer_routing_key);
@@ -339,12 +336,22 @@ TagTwo::Networking::ServiceDiscoveryClient::ServiceDiscoveryClient(
         , reconnect_interval(_reconnect_interval)
         , service_check_interval(_service_check_interval)
         , evbase(event_base_new())
-        , service_id(_service_id.empty() ? generateUUID(12) : std::move(_service_id))
+        , service_id(_service_id.empty() ? generateUUID(32) : std::move(_service_id))
         , heartbeat_enabled(true)
         , debug(_debug)
 {
+
+    if(debug){
+       SPDLOG_INFO("Starting monitoring thread for service: {}", service_name);
+    }
     start_monitor_thread();
+    if(debug){
+        SPDLOG_INFO("Starting heartbeat thread for service: {}", service_name);
+    }
     start_heartbeat_thread();
+    if(debug){
+        SPDLOG_INFO("Monitoring and heartbeat threads started for service: {}", service_name);
+    }
 }
 
 std::string TagTwo::Networking::ServiceDiscoveryClient::get_service_id() {
