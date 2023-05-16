@@ -2,6 +2,9 @@
 // Created by per on 4/6/23.
 //
 #include "TagTwo/Util/JsonBuilder.h"
+#include <sstream>
+#include <iostream>
+#include <vector>
 
 
 void TagTwo::Util::JsonBuilder::set_multilevel_key(nlohmann::json &json_object, const std::string &key,

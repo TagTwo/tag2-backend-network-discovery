@@ -28,7 +28,7 @@ namespace TagTwo::Util {
 
 
         // Retrieve a specific key's value
-        [[nodiscard]] std::string get(const std::string& key) const;
+        std::string get(const std::string& key) const;
 
     private:
         // Private constructor

@@ -5,6 +5,7 @@ project(tagtwo_network_discovery LANGUAGES CXX)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/Modules")
 
+
 ##########################################
 ##
 ## Title: PMM Setup
@@ -17,9 +18,10 @@ include(cmake/util.cmake)
 
 if(WIN32)
     set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "" FORCE)
-elseif (UNIX)
+elseif (LINUX)
     set(VCPKG_TARGET_TRIPLET x64-linux)
 endif()
+
 
 # # THIS MUST BE BEFORE PMM (else it will use python from vcpkg)
 find_package(pybind11 CONFIG REQUIRED)
